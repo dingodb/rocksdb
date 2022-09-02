@@ -51,6 +51,7 @@ class BaseDeltaIterator : public Iterator {
   void Prev() override;
   Slice key() const override;
   Slice value() const override;
+  Slice SourceValue() const override { return this->value(); }
   Status status() const override;
   void Invalidate(Status s);
 

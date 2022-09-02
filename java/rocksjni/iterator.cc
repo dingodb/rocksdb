@@ -304,6 +304,28 @@ jbyteArray Java_org_rocksdb_RocksIterator_value0(JNIEnv* env, jobject /*jobj*/,
 
 /*
  * Class:     org_rocksdb_RocksIterator
+ * Method:    value0
+ * Signature: (J)[B
+ */
+jbyteArray Java_org_rocksdb_RocksIterator_sourceValue0(JNIEnv* env, jobject /*jobj*/,
+                                                 jlong handle) {
+  auto* it = reinterpret_cast<ROCKSDB_NAMESPACE::Iterator*>(handle);
+  ROCKSDB_NAMESPACE::Slice value_slice = it->SourceValue();
+
+  jbyteArray jkeyValue =
+      env->NewByteArray(static_cast<jsize>(value_slice.size()));
+  if (jkeyValue == nullptr) {
+    // exception thrown: OutOfMemoryError
+    return nullptr;
+  }
+  env->SetByteArrayRegion(
+      jkeyValue, 0, static_cast<jsize>(value_slice.size()),
+      const_cast<jbyte*>(reinterpret_cast<const jbyte*>(value_slice.data())));
+  return jkeyValue;
+}
+
+/*
+ * Class:     org_rocksdb_RocksIterator
  * Method:    valueDirect0
  * Signature: (JLjava/nio/ByteBuffer;II)I
  */

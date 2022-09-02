@@ -238,6 +238,13 @@ Status RocksDBOptionsParser::ParseStatement(std::string* name,
   return Status::OK();
 }
 
+Status RocksDBOptionsParser::ParseDBOptionsSimply(const ConfigOptions& config_options_in,
+                                   const std::string& file_name,
+                                   FileSystem* fs) {
+  is_check_default_cf_options_ = false;
+  return Parse(config_options_in, file_name, fs);
+}
+
 Status RocksDBOptionsParser::Parse(const std::string& file_name, FileSystem* fs,
                                    bool ignore_unknown_options,
                                    size_t file_readahead_size) {
@@ -499,7 +506,7 @@ Status RocksDBOptionsParser::ValidityCheck() {
     return Status::Corruption(
         "A RocksDB Option file must have a single DBOptions section");
   }
-  if (!has_default_cf_options_) {
+  if (is_check_default_cf_options_ && !has_default_cf_options_) {
     return Status::Corruption(
         "A RocksDB Option file must have a single CFOptions:default section");
   }

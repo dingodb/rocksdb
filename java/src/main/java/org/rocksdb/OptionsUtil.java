@@ -149,6 +149,12 @@ public class OptionsUtil {
         configOptions.nativeHandle_, optionsFileName, dbOptions.nativeHandle_, cfDescs);
   }
 
+  public static void loadDBOptionsSimplyFromFile(ConfigOptions configOptions, String optionsFileName,
+      DBOptions dbOptions) throws RocksDBException {
+    loadDBOptionsSimplyFromFile(
+        configOptions.nativeHandle_, optionsFileName, dbOptions.nativeHandle_);
+  }
+
   /**
    * Returns the latest options file name under the specified RocksDB path.
    *
@@ -179,6 +185,8 @@ public class OptionsUtil {
       throws RocksDBException;
   private native static void loadOptionsFromFile(long cfgHandle, String optionsFileName,
       long dbOptionsHandle, List<ColumnFamilyDescriptor> cfDescs) throws RocksDBException;
+  private native static void loadDBOptionsSimplyFromFile(long cfgHandle, String optionsFileName,
+      long dbOptionsHandle) throws RocksDBException;
   private native static String getLatestOptionsFileName(String dbPath, long envHandle)
       throws RocksDBException;
 }

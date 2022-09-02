@@ -173,6 +173,9 @@ class DBIter final : public Iterator {
       return iter_.value();
     }
   }
+  Slice SourceValue() const override {
+    return this->value();
+  }
   Status status() const override {
     if (status_.ok()) {
       return iter_.status();

@@ -99,6 +99,8 @@ Status LoadOptionsFromFile(const ConfigOptions& config_options,
                            DBOptions* db_options,
                            std::vector<ColumnFamilyDescriptor>* cf_descs,
                            std::shared_ptr<Cache>* cache = {});
+Status LoadDBOptionsSimplyFromFile(const ConfigOptions& config_options,
+                           const std::string& file_name, DBOptions* db_options);
 
 // Returns the latest options file name under the specified db path.
 Status GetLatestOptionsFileName(const std::string& dbpath, Env* env,

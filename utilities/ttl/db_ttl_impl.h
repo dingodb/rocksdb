@@ -34,6 +34,7 @@ class DBWithTTLImpl : public DBWithTTL {
 
   static void RegisterTtlClasses();
   explicit DBWithTTLImpl(DB* db);
+  explicit DBWithTTLImpl(DB* db, bool has_timestamp_suffix);
 
   virtual ~DBWithTTLImpl();
 
@@ -108,6 +109,7 @@ class DBWithTTLImpl : public DBWithTTL {
  private:
   // remember whether the Close completes or not
   bool closed_;
+  bool has_timestamp_suffix_;
 };
 
 class TtlIterator : public Iterator {
@@ -144,6 +146,12 @@ class TtlIterator : public Iterator {
     Slice trimmed_value = iter_->value();
     trimmed_value.size_ -= DBWithTTLImpl::kTSLength;
     return trimmed_value;
+  }
+
+  Slice SourceValue() const override {
+    // TODO: handle timestamp corruption like in general iterator semantics
+    assert(DBWithTTLImpl::SanityCheckTimestamp(iter_->value()).ok());
+    return iter_->value();
   }
 
   Status status() const override { return iter_->status(); }
