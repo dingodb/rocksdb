@@ -101,6 +101,7 @@ class Iterator : public Cleanable {
     assert(false);
     return kNoWideColumns;
   }
+  virtual Slice SourceValue() const = 0;
 
   // If an error has occurred, return it.  Else return an ok status.
   // If non-blocking IO is requested and this operation cannot be

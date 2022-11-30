@@ -115,6 +115,10 @@ class BlobDBIterator : public Iterator {
     return value_;
   }
 
+  Slice SourceValue() const override {
+    return this->value();
+  }
+
   // Iterator::Refresh() not supported.
 
  private:

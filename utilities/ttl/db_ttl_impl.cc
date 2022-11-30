@@ -306,7 +306,10 @@ int RegisterTtlObjects(ObjectLibrary& library, const std::string& /*arg*/) {
   return static_cast<int>(library.GetFactoryCount(&num_types));
 }
 // Open the db inside DBWithTTLImpl because options needs pointer to its ttl
-DBWithTTLImpl::DBWithTTLImpl(DB* db) : DBWithTTL(db), closed_(false) {}
+DBWithTTLImpl::DBWithTTLImpl(DB* db) : DBWithTTL(db), closed_(false), has_timestamp_suffix_(false) {}
+
+DBWithTTLImpl::DBWithTTLImpl(DB* db, bool has_timestamp_suffix) : DBWithTTL(db), closed_(false), 
+  has_timestamp_suffix_(has_timestamp_suffix) {}
 
 DBWithTTLImpl::~DBWithTTLImpl() {
   if (!closed_) {
@@ -335,7 +338,7 @@ void DBWithTTLImpl::RegisterTtlClasses() {
 }
 
 Status DBWithTTL::Open(const Options& options, const std::string& dbname,
-                       DBWithTTL** dbptr, int32_t ttl, bool read_only) {
+                       DBWithTTL** dbptr, int32_t ttl, bool read_only, bool has_timestamp_suffix) {
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
@@ -343,7 +346,7 @@ Status DBWithTTL::Open(const Options& options, const std::string& dbname,
       ColumnFamilyDescriptor(kDefaultColumnFamilyName, cf_options));
   std::vector<ColumnFamilyHandle*> handles;
   Status s = DBWithTTL::Open(db_options, dbname, column_families, &handles,
-                             dbptr, {ttl}, read_only);
+                             dbptr, {ttl}, read_only, has_timestamp_suffix);
   if (s.ok()) {
     assert(handles.size() == 1);
     // i can delete the handle since DBImpl is always holding a reference to
@@ -357,7 +360,7 @@ Status DBWithTTL::Open(
     const DBOptions& db_options, const std::string& dbname,
     const std::vector<ColumnFamilyDescriptor>& column_families,
     std::vector<ColumnFamilyHandle*>* handles, DBWithTTL** dbptr,
-    const std::vector<int32_t>& ttls, bool read_only) {
+    const std::vector<int32_t>& ttls, bool read_only, bool has_timestamp_suffix) {
   DBWithTTLImpl::RegisterTtlClasses();
   if (ttls.size() != column_families.size()) {
     return Status::InvalidArgument(
@@ -384,7 +387,7 @@ Status DBWithTTL::Open(
     st = DB::Open(db_options, dbname, column_families_sanitized, handles, &db);
   }
   if (st.ok()) {
-    *dbptr = new DBWithTTLImpl(db);
+    *dbptr = new DBWithTTLImpl(db, has_timestamp_suffix);
   } else {
     *dbptr = nullptr;
   }
@@ -546,10 +549,16 @@ Status DBWithTTLImpl::Merge(const WriteOptions& options,
 Status DBWithTTLImpl::Write(const WriteOptions& opts, WriteBatch* updates) {
   class Handler : public WriteBatch::Handler {
    public:
-    explicit Handler(SystemClock* clock) : clock_(clock) {}
+    explicit Handler(SystemClock* clock, bool has_timestamp_suffix) : clock_(clock),
+      has_timestamp_suffix_(has_timestamp_suffix) {}
     WriteBatch updates_ttl;
     Status PutCF(uint32_t column_family_id, const Slice& key,
                  const Slice& value) override {
+      if (has_timestamp_suffix_) {
+        return WriteBatchInternal::Put(&updates_ttl, column_family_id, key,
+                                      value);
+      }
+
       std::string value_with_ts;
       Status st = AppendTS(value, &value_with_ts, clock_);
       if (!st.ok()) {
@@ -560,6 +569,11 @@ Status DBWithTTLImpl::Write(const WriteOptions& opts, WriteBatch* updates) {
     }
     Status MergeCF(uint32_t column_family_id, const Slice& key,
                    const Slice& value) override {
+      if (has_timestamp_suffix_) {
+        return WriteBatchInternal::Merge(&updates_ttl, column_family_id, key,
+                                    value);
+      }
+
       std::string value_with_ts;
       Status st = AppendTS(value, &value_with_ts, clock_);
       if (!st.ok()) {
@@ -580,8 +594,9 @@ Status DBWithTTLImpl::Write(const WriteOptions& opts, WriteBatch* updates) {
 
    private:
     SystemClock* clock_;
+    bool has_timestamp_suffix_;
   };
-  Handler handler(GetEnv()->GetSystemClock().get());
+  Handler handler(GetEnv()->GetSystemClock().get(), has_timestamp_suffix_);
   Status st = updates->Iterate(&handler);
   if (!st.ok()) {
     return st;

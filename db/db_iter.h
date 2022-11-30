@@ -170,6 +170,9 @@ class DBIter final : public Iterator {
     return wide_columns_;
   }
 
+  Slice SourceValue() const override {
+    return this->value();
+  }
   Status status() const override {
     if (status_.ok()) {
       return iter_.status();

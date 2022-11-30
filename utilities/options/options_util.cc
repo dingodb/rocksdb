@@ -57,6 +57,18 @@ Status LoadOptionsFromFile(const ConfigOptions& config_options,
   return Status::OK();
 }
 
+Status LoadDBOptionsSimplyFromFile(const ConfigOptions& config_options,
+                           const std::string& file_name, DBOptions* db_options) {
+  RocksDBOptionsParser parser;
+  const auto& fs = config_options.env->GetFileSystem();
+  Status s = parser.ParseDBOptionsSimply(config_options, file_name, fs.get());
+  if (!s.ok()) {
+    return s;
+  }
+  *db_options = *parser.db_opt();
+  return Status::OK();
+}
+
 Status GetLatestOptionsFileName(const std::string& dbpath,
                                 Env* env, std::string* options_file_name) {
   Status s;

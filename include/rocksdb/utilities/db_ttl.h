@@ -52,13 +52,13 @@ class DBWithTTL : public StackableDB {
 
   static Status Open(const Options& options, const std::string& dbname,
                      DBWithTTL** dbptr, int32_t ttl = 0,
-                     bool read_only = false);
+                     bool read_only = false, bool has_timestamp_suffix = false);
 
   static Status Open(const DBOptions& db_options, const std::string& dbname,
                      const std::vector<ColumnFamilyDescriptor>& column_families,
                      std::vector<ColumnFamilyHandle*>* handles,
                      DBWithTTL** dbptr, const std::vector<int32_t>& ttls,
-                     bool read_only = false);
+                     bool read_only = false, bool has_timestamp_suffix = false);
 
   virtual void SetTtl(int32_t ttl) = 0;
 

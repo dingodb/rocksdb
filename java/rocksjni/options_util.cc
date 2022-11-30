@@ -168,6 +168,33 @@ void Java_org_rocksdb_OptionsUtil_loadOptionsFromFile__JLjava_lang_String_2JLjav
 
 /*
  * Class:     org_rocksdb_OptionsUtil
+ * Method:    loadDBOptionsSimplyFromFile
+ * Signature: (JLjava/lang/String;J)V
+ */
+void Java_org_rocksdb_OptionsUtil_loadDBOptionsSimplyFromFile(
+    JNIEnv* env, jclass /*jcls*/, jlong cfg_handle, jstring jopts_file_name,
+    jlong jdb_opts_handle) {
+  jboolean has_exception = JNI_FALSE;
+  auto opts_file_name = ROCKSDB_NAMESPACE::JniUtil::copyStdString(
+      env, jopts_file_name, &has_exception);
+  if (has_exception == JNI_TRUE) {
+    // exception occurred
+    return;
+  }
+  auto* config_options =
+      reinterpret_cast<ROCKSDB_NAMESPACE::ConfigOptions*>(cfg_handle);
+  auto* db_options =
+      reinterpret_cast<ROCKSDB_NAMESPACE::DBOptions*>(jdb_opts_handle);
+  ROCKSDB_NAMESPACE::Status s = ROCKSDB_NAMESPACE::LoadDBOptionsSimplyFromFile(
+      *config_options, opts_file_name, db_options);
+  if (!s.ok()) {
+    // error, raise an exception
+    ROCKSDB_NAMESPACE::RocksDBExceptionJni::ThrowNew(env, s);
+  }
+}
+
+/*
+ * Class:     org_rocksdb_OptionsUtil
  * Method:    getLatestOptionsFileName
  * Signature: (Ljava/lang/String;J)Ljava/lang/String;
  */

@@ -81,6 +81,11 @@ public class RocksIterator extends AbstractRocksIterator<RocksDB> {
     return value0(nativeHandle_);
   }
 
+  public byte[] sourceValue() {
+    assert(isOwningHandle());
+    return sourceValue0(nativeHandle_);
+  }
+
   /**
    * <p>Return the value for the current entry.  The underlying storage for
    * the returned slice is valid only until the next modification of
@@ -133,6 +138,7 @@ public class RocksIterator extends AbstractRocksIterator<RocksDB> {
 
   private native byte[] key0(long handle);
   private native byte[] value0(long handle);
+  private native byte[] sourceValue0(long handle);
   private native int keyDirect0(long handle, ByteBuffer buffer, int bufferOffset, int bufferLen);
   private native int keyByteArray0(long handle, byte[] array, int arrayOffset, int arrayLen);
   private native int valueDirect0(long handle, ByteBuffer buffer, int bufferOffset, int bufferLen);

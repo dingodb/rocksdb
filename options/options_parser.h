@@ -49,6 +49,9 @@ class RocksDBOptionsParser {
   ~RocksDBOptionsParser() {}
   void Reset();
 
+  Status ParseDBOptionsSimply(const ConfigOptions& config_options,
+               const std::string& file_name, FileSystem* fs);
+
   // `file_readahead_size` is used for readahead for the option file.
   // If 0 is given, a default value will be used.
   Status Parse(const std::string& file_name, FileSystem* fs,
@@ -144,6 +147,7 @@ class RocksDBOptionsParser {
   bool has_default_cf_options_;
   int db_version[3];
   int opt_file_version[3];
+  bool is_check_default_cf_options_ = true;
 };
 
 #endif  // !ROCKSDB_LITE

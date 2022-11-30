@@ -45,6 +45,7 @@ class EmptyIterator : public Iterator {
     assert(false);
     return Slice();
   }
+  Slice SourceValue() const override { return this->value();}
   Status status() const override { return status_; }
 
  private:

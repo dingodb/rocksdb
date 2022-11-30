@@ -140,6 +140,59 @@ public class TtlDB extends RocksDB {
   }
 
   /**
+   * <p>Opens a TtlDB.</p>
+   *
+   * @param options {@link org.rocksdb.Options} instance.
+   * @param db_path path to database.
+   * @param columnFamilyDescriptors list of column family descriptors
+   * @param columnFamilyHandles will be filled with ColumnFamilyHandle instances
+   *     on open.
+   * @param ttlValues time to live values per column family handle
+   * @param readOnly boolean value indicating if database if db is
+   *     opened read-only.
+   * @param hasTimestampSuffix value has timestamp suffix when putting or merging.
+   *
+   * @return TtlDB instance.
+   *
+   * @throws RocksDBException thrown if an error occurs within the native
+   *     part of the library.
+   * @throws java.lang.IllegalArgumentException when there is not a ttl value
+   *     per given column family handle.
+   */
+  public static TtlDB open(final DBOptions options, final String db_path,
+      final List<ColumnFamilyDescriptor> columnFamilyDescriptors,
+      final List<ColumnFamilyHandle> columnFamilyHandles,
+      final List<Integer> ttlValues, final boolean readOnly, final boolean hasTimestampSuffix)
+      throws RocksDBException {
+    if (columnFamilyDescriptors.size() != ttlValues.size()) {
+      throw new IllegalArgumentException("There must be a ttl value per column"
+          + " family handle.");
+    }
+
+    final byte[][] cfNames = new byte[columnFamilyDescriptors.size()][];
+    final long[] cfOptionHandles = new long[columnFamilyDescriptors.size()];
+    for (int i = 0; i < columnFamilyDescriptors.size(); i++) {
+      final ColumnFamilyDescriptor cfDescriptor =
+          columnFamilyDescriptors.get(i);
+      cfNames[i] = cfDescriptor.getName();
+      cfOptionHandles[i] = cfDescriptor.getOptions().nativeHandle_;
+    }
+
+    final int ttlVals[] = new int[ttlValues.size()];
+    for(int i = 0; i < ttlValues.size(); i++) {
+      ttlVals[i] = ttlValues.get(i);
+    }
+    final long[] handles = openCF1(options.nativeHandle_, db_path,
+            cfNames, cfOptionHandles, ttlVals, readOnly, hasTimestampSuffix);
+
+    final TtlDB ttlDB = new TtlDB(handles[0]);
+    for (int i = 1; i < handles.length; i++) {
+      columnFamilyHandles.add(new ColumnFamilyHandle(ttlDB, handles[i]));
+    }
+    return ttlDB;
+  }
+
+  /**
    * <p>Close the TtlDB instance and release resource.</p>
    *
    * This is similar to {@link #close()} except that it
@@ -237,6 +290,10 @@ public class TtlDB extends RocksDB {
       final String db_path, final byte[][] columnFamilyNames,
       final long[] columnFamilyOptions, final int[] ttlValues,
       final boolean readOnly) throws RocksDBException;
+  private native static long[] openCF1(final long optionsHandle,
+      final String db_path, final byte[][] columnFamilyNames,
+      final long[] columnFamilyOptions, final int[] ttlValues,
+      final boolean readOnly, final boolean hasTimestampSuffix) throws RocksDBException;
   private native long createColumnFamilyWithTtl(final long handle,
       final byte[] columnFamilyName, final long columnFamilyOptions, int ttl)
       throws RocksDBException;

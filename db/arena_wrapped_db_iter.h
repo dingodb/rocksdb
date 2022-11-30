@@ -71,6 +71,7 @@ class ArenaWrappedDBIter : public Iterator {
   Slice key() const override { return db_iter_->key(); }
   Slice value() const override { return db_iter_->value(); }
   const WideColumns& columns() const override { return db_iter_->columns(); }
+  Slice SourceValue() const override { return this->value(); }
   Status status() const override { return db_iter_->status(); }
   Slice timestamp() const override { return db_iter_->timestamp(); }
   bool IsBlob() const { return db_iter_->IsBlob(); }
