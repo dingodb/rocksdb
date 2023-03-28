@@ -6493,6 +6493,7 @@ class Benchmark {
     int64_t bytes = 0;
     double total_scan_length = 0;
     double total_val_size = 0;
+    double total_key_size = 0;
     const int64_t default_value_max = 1 * 1024 * 1024;
     int64_t value_max = default_value_max;
     int64_t scan_len_max = FLAGS_mix_max_scan_len;
@@ -6625,6 +6626,7 @@ class Benchmark {
           val_size = val_size % value_max;
         }
         total_val_size += val_size;
+        total_key_size += key.size();
 
         s = db_with_cfh->db->Put(
             write_options_, key,
@@ -6674,8 +6676,8 @@ class Benchmark {
              "( Gets:%" PRIu64 " Puts:%" PRIu64 " Seek:%" PRIu64
              ", reads %" PRIu64 " in %" PRIu64
              " found, "
-             "avg size: %.1f value, %.1f scan)\n",
-             gets, puts, seek, get_found + seek_found, gets + seek,
+             "avg size: %.1f key, %.1f value, %.1f scan)\n",
+             gets, puts, seek, get_found + seek_found, gets + seek, total_key_size / puts,
              total_val_size / puts, total_scan_length / seek);
 
     thread->stats.AddBytes(bytes);
