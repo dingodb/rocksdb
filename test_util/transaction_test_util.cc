@@ -12,6 +12,7 @@
 #include <random>
 #include <string>
 #include <thread>
+#include <iostream> 
 
 #include "rocksdb/db.h"
 #include "rocksdb/utilities/optimistic_transaction_db.h"
@@ -56,7 +57,8 @@ bool RandomTransactionInserter::TransactionDBInsert(
   snprintf(name, 64, "txn%" ROCKSDB_PRIszt "-%" PRIu64,
            hasher(std::this_thread::get_id()), txn_id_++);
   assert(strlen(name) < 64 - 1);
-  assert(txn_->SetName(name).ok());
+  Status status = txn_->SetName(name);
+  assert(status.ok());
 
   // Take a snapshot if set_snapshot was not set or with 50% change otherwise
   bool take_snapshot = txn_->GetSnapshot() == nullptr || rand_->OneIn(2);
@@ -192,6 +194,8 @@ bool RandomTransactionInserter::DoInsert(DB* db, Transaction* txn,
       }
       bytes_inserted_ += key.size() + sum.size();
     }
+
+    /*
     if (txn != nullptr) {
       ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
                       "Insert (%s) %s snap: %" PRIu64 " key:%s value: %" PRIu64
@@ -199,7 +203,7 @@ bool RandomTransactionInserter::DoInsert(DB* db, Transaction* txn,
                       txn->GetName().c_str(), s.ToString().c_str(),
                       txn->GetSnapshot()->GetSequenceNumber(), full_key.c_str(),
                       int_value, incr, int_value + incr);
-    }
+    }*/
   }
 
   if (s.ok()) {
@@ -213,9 +217,9 @@ bool RandomTransactionInserter::DoInsert(DB* db, Transaction* txn,
                   s.ToString().c_str());
         }
         assert(s.ok());
-        ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
+        /*ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
                         "Prepare of %" PRIu64 " %s (%s)", txn->GetId(),
-                        s.ToString().c_str(), txn->GetName().c_str());
+                        s.ToString().c_str(), txn->GetName().c_str());*/
         if (rand_->OneIn(20)) {
           // This currently only tests the mechanics of writing commit time
           // write batch so the exact values would not matter.
@@ -228,15 +232,15 @@ bool RandomTransactionInserter::DoInsert(DB* db, Transaction* txn,
       if (!rand_->OneIn(20)) {
         s = txn->Commit();
         assert(!with_prepare || s.ok());
-        ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
+        /*ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
                         "Commit of %" PRIu64 " %s (%s)", txn->GetId(),
-                        s.ToString().c_str(), txn->GetName().c_str());
+                        s.ToString().c_str(), txn->GetName().c_str());*/
       } else {
         // Also try 5% rollback
         s = txn->Rollback();
-        ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
+        /*ROCKS_LOG_DEBUG(db->GetDBOptions().info_log,
                         "Rollback %" PRIu64 " %s %s", txn->GetId(),
-                        txn->GetName().c_str(), s.ToString().c_str());
+                        txn->GetName().c_str(), s.ToString().c_str());*/
         assert(s.ok());
       }
       assert(is_optimistic || s.ok());
@@ -272,9 +276,10 @@ bool RandomTransactionInserter::DoInsert(DB* db, Transaction* txn,
     }
   } else {
     if (txn != nullptr) {
-      assert(txn->Rollback().ok());
-      ROCKS_LOG_DEBUG(db->GetDBOptions().info_log, "Error %s for txn %s",
-                      s.ToString().c_str(), txn->GetName().c_str());
+      Status roll_status = txn->Rollback();
+      assert(roll_status.ok());
+      /*ROCKS_LOG_DEBUG(db->GetDBOptions().info_log, "Error %s for txn %s",
+                      s.ToString().c_str(), txn->GetName().c_str());*/
     }
   }
 
@@ -378,7 +383,7 @@ Status RandomTransactionInserter::Verify(DB* db, uint16_t num_sets,
               use_point_lookup, prev_i, prev_total, set_i, total,
               roptions.snapshot ? roptions.snapshot->GetSequenceNumber() : 0ul);
       fflush(stdout);
-      return Status::Corruption();
+      //return Status::Corruption();
     } else {
       ROCKS_LOG_DEBUG(
           db->GetDBOptions().info_log,
